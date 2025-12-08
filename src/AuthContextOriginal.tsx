@@ -1,7 +1,7 @@
 // src/contexts/AuthContext.tsx
-import { auth } from ".firebase/firebase";
 import { useRouter } from "expo-router";
 import { createUserWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged, signInWithEmailAndPassword, User } from "firebase/auth";
+import { auth } from "firebase/firebase";
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 type AuthContextValue = {

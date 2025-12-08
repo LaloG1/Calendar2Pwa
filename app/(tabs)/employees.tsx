@@ -150,37 +150,35 @@ export default function EmployeesScreen() {
   };
 
   const saveEmployee = async () => {
-  if (!employeeNumber || !employeeName) {
-    Alert.alert("Error", "Completa número y nombre.");
-    return;
-  }
-
-  const payload = {
-    number: Number(employeeNumber),
-    name: employeeName.trim(),
-  };
-
-  try {
-    if (editingId) {
-      await updateDoc(doc(db, "employees", editingId), payload);
-      Alert.alert("Éxito", "Empleado actualizado correctamente.");
-    } else {
-      await addDoc(collection(db, "employees"), payload);
-      Alert.alert("Éxito", "Empleado agregado correctamente.");
+    if (!employeeNumber || !employeeName) {
+      Alert.alert("Error", "Completa número y nombre.");
+      return;
     }
 
-    // Cerrar modal + reset
-    setModalVisible(false);
-    setEmployeeName("");
-    setEmployeeNumber("");
-    setEditingId(null);
+    const payload = {
+      number: Number(employeeNumber),
+      name: employeeName.trim(),
+    };
 
-  } catch (err) {
-    console.error("saveEmployee error:", err);
-    Alert.alert("Error", "No se pudo guardar. Revisa la consola.");
-  }
-};
+    try {
+      if (editingId) {
+        await updateDoc(doc(db, "employees", editingId), payload);
+        Alert.alert("Éxito", "Empleado actualizado correctamente.");
+      } else {
+        await addDoc(collection(db, "employees"), payload);
+        Alert.alert("Éxito", "Empleado agregado correctamente.");
+      }
 
+      // Cerrar modal + reset
+      setModalVisible(false);
+      setEmployeeName("");
+      setEmployeeNumber("");
+      setEditingId(null);
+    } catch (err) {
+      console.error("saveEmployee error:", err);
+      Alert.alert("Error", "No se pudo guardar. Revisa la consola.");
+    }
+  };
 
   // -------------------------
   //  Eliminar con confirmación
