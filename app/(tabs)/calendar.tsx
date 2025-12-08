@@ -74,11 +74,19 @@ export default function CalendarScreen() {
   // ------------------------------
   const filteredEmployees = useMemo(() => {
     if (!search) return [];
+
     const s = search.toLowerCase();
+    const assignedIds =
+      (selectedDate &&
+        calendarData[selectedDate]?.employees?.map((e: any) => e.id)) ||
+      [];
+
     return employees.filter(
-      (e) => String(e.number).includes(s) || e.name.toLowerCase().includes(s)
+      (e) =>
+        !assignedIds.includes(e.id) && // 👉 excluir asignados
+        (String(e.number).includes(s) || e.name.toLowerCase().includes(s))
     );
-  }, [search, employees]);
+  }, [search, employees, selectedDate, calendarData]);
 
   // ------------------------------
   // Marcas en calendario
@@ -139,13 +147,25 @@ export default function CalendarScreen() {
   const assignEmployee = async () => {
     if (!selectedDate || !selectedEmployee) return;
 
-    const ref = doc(db, "calendar", selectedDate);
     const current = calendarData[selectedDate]?.employees || [];
 
+    // 👉 VALIDAR SI YA EXISTE
+    const alreadyExists = current.some(
+      (e: any) => e.id === selectedEmployee.id
+    );
+
+    if (alreadyExists) {
+      Alert.alert(
+        "Empleado ya asignado",
+        `El empleado ${selectedEmployee.name} ya está registrado en este día.`
+      );
+      return;
+    }
+
+    const ref = doc(db, "calendar", selectedDate);
+
     try {
-      await setDoc(ref, {
-        employees: [...current, selectedEmployee],
-      });
+      await setDoc(ref, { employees: [...current, selectedEmployee] });
 
       Alert.alert(
         "Asignación exitosa",
@@ -232,36 +252,100 @@ export default function CalendarScreen() {
               No hay empleados asignados aún.
             </Text>
           ) : (
-            <FlatList
-              data={assignedEmployees}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    padding: 10,
-                    backgroundColor: "#f8f8f8",
-                    borderRadius: 8,
-                    marginBottom: 6,
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
+            <>
+              {/* HEADER DE TABLA */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  backgroundColor: "#e2e8f0",
+                  paddingVertical: 10,
+                  borderRadius: 6,
+                  paddingHorizontal: 6,
+                  alignItems: "center", // centra verticalmente
+                }}
+              >
+                <Text
+                  style={{ flex: 1, fontWeight: "700", textAlign: "center" }}
+                  numberOfLines={1}
                 >
-                  <View>
-                    <Text style={{ fontWeight: "700" }}>
-                      {item.number} - {item.name}
-                    </Text>
-                  </View>
+                  #
+                </Text>
+                <Text
+                  style={{ flex: 2, fontWeight: "700", textAlign: "center" }}
+                  numberOfLines={1}
+                >
+                  N° Empleado
+                </Text>
+                <Text
+                  style={{ flex: 2, fontWeight: "700", textAlign: "center" }}
+                  numberOfLines={1}
+                >
+                  Nombre
+                </Text>
+                <Text
+                  style={{ flex: 0.5, fontWeight: "700", textAlign: "center" }}
+                  numberOfLines={1}
+                >
+                  Acc
+                </Text>
+              </View>
 
-                  <TouchableOpacity
-                    onPress={() => removeEmployee(item.id)}
-                    style={{ padding: 6 }}
+              <FlatList
+                data={assignedEmployees}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item, index }) => (
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 10,
+                      paddingHorizontal: 6,
+                      backgroundColor: "#f8f8f8",
+                      borderRadius: 8,
+                      marginTop: 6,
+                      alignItems: "center",
+                      justifyContent: "center", // centra horizontal (colaboración con flex)
+                    }}
                   >
-                    <Ionicons name="trash-outline" size={22} color="#ff3b30" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
+                    {/* # */}
+                    <Text style={{ flex: 1, textAlign: "center" }}>
+                      {index + 1}
+                    </Text>
+
+                    {/* Número */}
+                    <Text
+                      style={{
+                        flex: 2,
+                        textAlign: "center",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {item.number}
+                    </Text>
+
+                    {/* Nombre */}
+                    <Text style={{ flex: 2, textAlign: "center" }}>
+                      {item.name}
+                    </Text>
+
+                    {/* Acciones */}
+                    <TouchableOpacity
+                      onPress={() => removeEmployee(item.id)}
+                      style={{
+                        flex: 0.5,
+                        alignItems: "center",
+                        padding: 6,
+                      }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={22}
+                        color="#ff3b30"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              />
+            </>
           )}
         </View>
       )}
