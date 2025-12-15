@@ -302,7 +302,7 @@ export default function CalendarScreen() {
                 }}
               >
                 <Text
-                  style={{ flex: 1, fontWeight: "700", textAlign: "center" }}
+                  style={{ flex: 0.5, fontWeight: "700", textAlign: "center" }}
                   numberOfLines={1}
                 >
                   #
@@ -327,73 +327,89 @@ export default function CalendarScreen() {
                 </Text>
               </View>
 
-              <FlatList
-                data={assignedEmployees}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item, index }) => (
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      paddingVertical: 10,
-                      paddingHorizontal: 6,
-                      backgroundColor: "#f8f8f8",
-                      borderRadius: 8,
-                      marginTop: 6,
-                      alignItems: "center",
-                      justifyContent: "center", // centra horizontal (colaboración con flex)
-                    }}
-                  >
-                    {/* # */}
-                    <Text style={{ flex: 1, textAlign: "center" }}>
-                      {index + 1}
-                    </Text>
-
-                    {/* Número */}
-                    <Text
-                      style={{
-                        flex: 2,
-                        textAlign: "center",
-                        fontWeight: "600",
+              <View style={{ maxHeight: 260 }}>
+                <FlatList
+                  data={assignedEmployees}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item, index }) => (
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        if (item.exception) {
+                          Alert.alert(
+                            "Motivo de la excepción",
+                            item.exceptionReason || "Sin motivo registrado"
+                          );
+                        }
                       }}
                     >
-                      {item.number}
-                    </Text>
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          paddingVertical: 10,
+                          paddingHorizontal: 6,
+                          backgroundColor: "#f8f8f8",
+                          borderRadius: 8,
+                          marginTop: 6,
+                          alignItems: "center",
+                        }}
+                      >
+                        {/* # */}
+                        <Text style={{ flex: 0.5, textAlign: "center" }}>
+                          {index + 1}
+                        </Text>
 
-                    {/* Nombre + Excepción */}
-                    <View style={{ flex: 2, alignItems: "center" }}>
-                      <Text style={{ textAlign: "center" }}>{item.name}</Text>
-
-                      {item.exception && (
+                        {/* Número */}
                         <Text
                           style={{
-                            fontSize: 12,
-                            color: "#d97706",
-                            marginTop: 2,
+                            flex: 2,
+                            textAlign: "center",
+                            fontWeight: "600",
                           }}
                         >
-                          ⚠ Excepción
+                          {item.number}
                         </Text>
-                      )}
-                    </View>
 
-                    {/* Acciones */}
-                    <TouchableOpacity
-                      onPress={() => removeEmployee(item.id)}
-                      style={{
-                        flex: 0.5,
-                        alignItems: "center",
-                        padding: 6,
-                      }}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={22}
-                        color="#ff3b30"
-                      />
+                        {/* Nombre + Excepción */}
+                        <View style={{ flex: 2, alignItems: "center" }}>
+                          <Text style={{ textAlign: "center" }}>
+                            {item.name}
+                          </Text>
+
+                          {item.exception && (
+                            <Text
+                              style={{
+                                fontSize: 12,
+                                color: "#d97706",
+                                marginTop: 2,
+                              }}
+                            >
+                              ⚠ Excepción
+                            </Text>
+                          )}
+                        </View>
+
+                        {/* Acciones */}
+                        <TouchableOpacity
+                          onPress={() => removeEmployee(item.id)}
+                          style={{
+                            flex: 0.5,
+                            alignItems: "center",
+                            padding: 6,
+                          }}
+                        >
+                          <Ionicons
+                            name="trash-outline"
+                            size={22}
+                            color="#ff3b30"
+                          />
+                        </TouchableOpacity>
+                      </View>
                     </TouchableOpacity>
-                  </View>
-                )}
-              />
+                  )}
+                  showsVerticalScrollIndicator
+                />
+              </View>
             </>
           )}
         </View>
