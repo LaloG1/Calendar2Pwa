@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { collection, onSnapshot } from "firebase/firestore";
 import React, { useEffect, useMemo, useState } from "react";
-import { FlatList, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { db } from "../../src/firebase/firebase";
 
@@ -49,6 +49,44 @@ export default function ReportesScreen() {
 
     return dates;
   };
+
+  const reportResults = useMemo(() => {
+    if (confirmedDates.length === 0) return [];
+
+    const map: Record<
+      string,
+      {
+        id: string;
+        number: number;
+        name: string;
+        dates: string[];
+      }
+    > = {};
+
+    confirmedDates.forEach((date) => {
+      const dayData = calendarData[date];
+      if (!dayData?.employees) return;
+
+      dayData.employees.forEach((emp: any) => {
+        if (!map[emp.id]) {
+          map[emp.id] = {
+            id: emp.id,
+            number: emp.number,
+            name: emp.name,
+            dates: [],
+          };
+        }
+
+        map[emp.id].dates.push(date);
+      });
+    });
+
+    // ordenar fechas (más reciente → más antigua)
+    return Object.values(map).map((e) => ({
+      ...e,
+      dates: e.dates.sort((a, b) => (a < b ? 1 : -1)),
+    }));
+  }, [confirmedDates, calendarData]);
 
   /* ---------------- CARGAR CALENDARIO ---------------- */
 
@@ -263,31 +301,69 @@ export default function ReportesScreen() {
       )}
 
       {/* ---------- RESULTADOS ---------- */}
-      <FlatList
-        data={reportEmployees}
-        keyExtractor={(item, i) => item.id + item.date + i}
-        style={{ marginTop: 20 }}
-        renderItem={({ item }) => (
+      {reportResults.length > 0 && (
+        <View style={{ marginTop: 20 }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
+            Resultados del reporte
+          </Text>
+
+          {/* HEADER */}
           <View
             style={{
-              padding: 12,
-              borderBottomWidth: 1,
-              borderColor: "#eee",
+              flexDirection: "row",
+              backgroundColor: "#e2e8f0",
+              paddingVertical: 10,
+              borderRadius: 6,
+              paddingHorizontal: 6,
             }}
           >
-            <Text style={{ fontWeight: "700" }}>
-              {item.date} — {item.name}
+            <Text style={{ flex: 0.5, textAlign: "center", fontWeight: "700" }}>
+              #
             </Text>
-            <Text>N° {item.number}</Text>
-
-            {item.exception && (
-              <Text style={{ color: "#d97706", marginTop: 4 }}>
-                ⚠ {item.exceptionReason || "Excepción"}
-              </Text>
-            )}
+            <Text style={{ flex: 1.5, textAlign: "center", fontWeight: "700" }}>
+              N°
+            </Text>
+            <Text style={{ flex: 2, textAlign: "center", fontWeight: "700" }}>
+              Nombre
+            </Text>
+            <Text style={{ flex: 3, textAlign: "center", fontWeight: "700" }}>
+              Fechas
+            </Text>
           </View>
-        )}
-      />
+
+          {/* BODY */}
+          {reportResults.map((item, index) => (
+            <View
+              key={item.id}
+              style={{
+                flexDirection: "row",
+                paddingVertical: 10,
+                paddingHorizontal: 6,
+                backgroundColor: "#f8f8f8",
+                borderRadius: 8,
+                marginTop: 6,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ flex: 0.5, textAlign: "center" }}>
+                {index + 1}
+              </Text>
+
+              <Text
+                style={{ flex: 1.5, textAlign: "center", fontWeight: "600" }}
+              >
+                {item.number}
+              </Text>
+
+              <Text style={{ flex: 2, textAlign: "center" }}>{item.name}</Text>
+
+              <Text style={{ flex: 3, textAlign: "center", fontSize: 12 }}>
+                {item.dates.join(", ")}
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
