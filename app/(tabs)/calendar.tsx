@@ -27,6 +27,9 @@ export default function CalendarScreen() {
   const [calendarData, setCalendarData] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
+  const [isException, setIsException] = useState(false);
+  const [exceptionReason, setExceptionReason] = useState("");
+
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   // Modal de agregar empleado
@@ -132,10 +135,28 @@ export default function CalendarScreen() {
 
     const count = calendarData[selectedDate]?.employees?.length || 0;
     if (count >= 4) {
-      Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.");
+      Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Agregar excepción",
+          style: "default",
+          onPress: () => {
+            setIsException(true);
+            setSearch("");
+            setSelectedEmployee(null);
+            setExceptionReason("");
+            setModalVisible(true);
+          },
+        },
+      ]);
       return;
     }
 
+    setIsException(false);
+    setExceptionReason("");
     setSearch("");
     setSelectedEmployee(null);
     setModalVisible(true);
@@ -162,10 +183,26 @@ export default function CalendarScreen() {
       return;
     }
 
+    if (isException && exceptionReason.trim().length === 0) {
+      Alert.alert(
+        "Motivo requerido",
+        "Debes ingresar un motivo para la excepción."
+      );
+      return;
+    }
+
     const ref = doc(db, "calendar", selectedDate);
 
     try {
-      await setDoc(ref, { employees: [...current, selectedEmployee] });
+      const employeeToSave = {
+        ...selectedEmployee,
+        exception: isException,
+        exceptionReason: isException ? exceptionReason : null,
+      };
+
+      await setDoc(ref, {
+        employees: [...current, employeeToSave],
+      });
 
       Alert.alert(
         "Asignación exitosa",
@@ -322,10 +359,22 @@ export default function CalendarScreen() {
                       {item.number}
                     </Text>
 
-                    {/* Nombre */}
-                    <Text style={{ flex: 2, textAlign: "center" }}>
-                      {item.name}
-                    </Text>
+                    {/* Nombre + Excepción */}
+                    <View style={{ flex: 2, alignItems: "center" }}>
+                      <Text style={{ textAlign: "center" }}>{item.name}</Text>
+
+                      {item.exception && (
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#d97706",
+                            marginTop: 2,
+                          }}
+                        >
+                          ⚠ Excepción
+                        </Text>
+                      )}
+                    </View>
 
                     {/* Acciones */}
                     <TouchableOpacity
@@ -420,6 +469,27 @@ export default function CalendarScreen() {
                 <Text style={{ fontWeight: "700" }}>Empleado seleccionado</Text>
                 <Text>Número: {selectedEmployee.number}</Text>
                 <Text>Nombre: {selectedEmployee.name}</Text>
+              </View>
+            )}
+
+            {selectedEmployee && isException && (
+              <View style={{ marginTop: 12 }}>
+                <Text style={{ fontWeight: "700", marginBottom: 6 }}>
+                  Motivo de la excepción
+                </Text>
+                <TextInput
+                  placeholder="Describe el motivo..."
+                  value={exceptionReason}
+                  onChangeText={setExceptionReason}
+                  multiline
+                  style={{
+                    backgroundColor: "#f2f2f6",
+                    padding: 10,
+                    borderRadius: 8,
+                    minHeight: 60,
+                    textAlignVertical: "top",
+                  }}
+                />
               </View>
             )}
 
