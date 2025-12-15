@@ -20,7 +20,15 @@ import {
 import { Calendar } from "react-native-calendars";
 import { db } from "../../src/firebase/firebase";
 
-type Employee = { id: string; number: number; name: string };
+type Employee = {
+  id: string;
+  number: number;
+  name: string;
+  exception?: boolean;
+  exceptionReason?: string | null;
+};
+
+type AssignMode = "single" | "multiple";
 
 export default function CalendarScreen() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -32,17 +40,19 @@ export default function CalendarScreen() {
 
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  // Modal de agregar empleado
-  const [modalVisible, setModalVisible] = useState(false);
+  /* 🔽 NUEVO */
+  const [assignMode, setAssignMode] = useState<AssignMode>("single");
+  const [multiDates, setMultiDates] = useState<string[]>([]);
+  const [showMultiCalendar, setShowMultiCalendar] = useState(false);
 
+  // Modal
+  const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null
   );
 
-  // ------------------------------
-  // Cargar empleados
-  // ------------------------------
+  /* ---------------- CARGAR EMPLEADOS ---------------- */
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "employees"), (snap) => {
       const list = snap.docs.map((d) => ({
@@ -57,9 +67,7 @@ export default function CalendarScreen() {
     return () => unsub();
   }, []);
 
-  // ------------------------------
-  // Cargar calendario
-  // ------------------------------
+  /* ---------------- CARGAR CALENDARIO ---------------- */
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "calendar"), (snap) => {
       const data: Record<string, any> = {};
@@ -72,13 +80,10 @@ export default function CalendarScreen() {
     return () => unsub();
   }, []);
 
-  // ------------------------------
-  // Filtro búsqueda
-  // ------------------------------
+  /* ---------------- FILTRO ---------------- */
   const filteredEmployees = useMemo(() => {
     if (!search) return [];
 
-    const s = search.toLowerCase();
     const assignedIds =
       (selectedDate &&
         calendarData[selectedDate]?.employees?.map((e: any) => e.id)) ||
@@ -86,20 +91,18 @@ export default function CalendarScreen() {
 
     return employees.filter(
       (e) =>
-        !assignedIds.includes(e.id) && // 👉 excluir asignados
-        (String(e.number).includes(s) || e.name.toLowerCase().includes(s))
+        !assignedIds.includes(e.id) &&
+        (String(e.number).includes(search) ||
+          e.name.toLowerCase().includes(search.toLowerCase()))
     );
   }, [search, employees, selectedDate, calendarData]);
 
-  // ------------------------------
-  // Marcas en calendario
-  // ------------------------------
+  /* ---------------- MARCAS CALENDARIO ---------------- */
   const marked = useMemo(() => {
     const m: any = {};
 
     Object.keys(calendarData).forEach((date) => {
       const count = calendarData[date]?.employees?.length || 0;
-
       m[date] = {
         marked: true,
         dotColor: count < 4 ? "green" : "red",
@@ -117,134 +120,101 @@ export default function CalendarScreen() {
     return m;
   }, [calendarData, selectedDate]);
 
-  // ------------------------------
-  // Selección de día
-  // ------------------------------
   const onDayPress = (day: any) => {
     setSelectedDate(day.dateString);
   };
 
-  // ------------------------------
-  // Abrir modal desde botón
-  // ------------------------------
+  /* ---------------- ABRIR MODAL ---------------- */
   const openAddModal = () => {
     if (!selectedDate) {
-      Alert.alert("Selecciona un día", "Debes seleccionar un día primero.");
+      Alert.alert("Selecciona un día primero");
       return;
     }
 
     const count = calendarData[selectedDate]?.employees?.length || 0;
+
+    const open = (exception: boolean) => {
+      setIsException(exception);
+      setExceptionReason("");
+      setAssignMode("single");
+      setMultiDates([]);
+      setShowMultiCalendar(false);
+      setSearch("");
+      setSelectedEmployee(null);
+      setModalVisible(true);
+    };
+
     if (count >= 4) {
       Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Agregar excepción",
-          style: "default",
-          onPress: () => {
-            setIsException(true);
-            setSearch("");
-            setSelectedEmployee(null);
-            setExceptionReason("");
-            setModalVisible(true);
-          },
-        },
+        { text: "Cancelar", style: "cancel" },
+        { text: "Agregar excepción", onPress: () => open(true) },
       ]);
       return;
     }
 
-    setIsException(false);
-    setExceptionReason("");
-    setSearch("");
-    setSelectedEmployee(null);
-    setModalVisible(true);
+    open(false);
   };
 
-  // ------------------------------
-  // Guardar asignación
-  // ------------------------------
+  /* ---------------- GUARDAR ---------------- */
   const assignEmployee = async () => {
-    if (!selectedDate || !selectedEmployee) return;
+    if (!selectedEmployee) return;
 
-    const current = calendarData[selectedDate]?.employees || [];
+    const dates =
+      assignMode === "single"
+        ? selectedDate
+          ? [selectedDate]
+          : []
+        : multiDates;
 
-    // 👉 VALIDAR SI YA EXISTE
-    const alreadyExists = current.some(
-      (e: any) => e.id === selectedEmployee.id
-    );
-
-    if (alreadyExists) {
-      Alert.alert(
-        "Empleado ya asignado",
-        `El empleado ${selectedEmployee.name} ya está registrado en este día.`
-      );
+    if (dates.length === 0) {
+      Alert.alert("Selecciona al menos un día");
       return;
     }
 
-    if (isException && exceptionReason.trim().length === 0) {
-      Alert.alert(
-        "Motivo requerido",
-        "Debes ingresar un motivo para la excepción."
-      );
+    if (isException && exceptionReason.trim() === "") {
+      Alert.alert("Motivo requerido");
       return;
     }
-
-    const ref = doc(db, "calendar", selectedDate);
 
     try {
-      const employeeToSave = {
-        ...selectedEmployee,
-        exception: isException,
-        exceptionReason: isException ? exceptionReason : null,
-      };
+      for (const date of dates) {
+        const ref = doc(db, "calendar", date);
+        const current = calendarData[date]?.employees || [];
 
-      await setDoc(ref, {
-        employees: [...current, employeeToSave],
-      });
+        if (current.some((e: any) => e.id === selectedEmployee.id)) continue;
 
-      Alert.alert(
-        "Asignación exitosa",
-        `Empleado ${selectedEmployee.name} agregado al día ${selectedDate}`
-      );
+        const employeeToSave = {
+          ...selectedEmployee,
+          exception: isException,
+          exceptionReason: isException ? exceptionReason : null,
+        };
 
+        await setDoc(ref, { employees: [...current, employeeToSave] });
+      }
+
+      Alert.alert("Asignación exitosa");
       setModalVisible(false);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "No se pudo asignar el empleado.");
+      Alert.alert("Error");
     }
   };
 
-  // ------------------------------
-  // Eliminar empleado del día
-  // ------------------------------
+  /* ---------------- ELIMINAR ---------------- */
   const removeEmployee = async (empId: string) => {
     if (!selectedDate) return;
-
     const ref = doc(db, "calendar", selectedDate);
     const current = calendarData[selectedDate]?.employees || [];
-    const updated = current.filter((e: any) => e.id !== empId);
-
-    try {
-      await updateDoc(ref, { employees: updated });
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "No se pudo eliminar el empleado.");
-    }
+    await updateDoc(ref, {
+      employees: current.filter((e: any) => e.id !== empId),
+    });
   };
 
-  // ------------------------------
-  // Empleados asignados al día
-  // ------------------------------
   const assignedEmployees =
     selectedDate && calendarData[selectedDate]?.employees
       ? calendarData[selectedDate].employees
       : [];
-
-  // ------------------------------
-  // Loading
-  // ------------------------------
+  /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -255,10 +225,10 @@ export default function CalendarScreen() {
 
   return (
     <View style={{ flex: 1, paddingTop: 40, paddingHorizontal: 12 }}>
-      {/* CALENDARIO */}
+      {/* CALENDARIO PRINCIPAL */}
       <Calendar markedDates={marked} onDayPress={onDayPress} />
 
-      {/* BOTÓN AGREGAR EMPLEADO */}
+      {/* BOTÓN AGREGAR */}
       <TouchableOpacity
         style={{
           backgroundColor: "#2f855a",
@@ -277,141 +247,87 @@ export default function CalendarScreen() {
         </Text>
       </TouchableOpacity>
 
-      {/* TABLA DE EMPLEADOS ASIGNADOS */}
+      {/* TABLA */}
       {selectedDate && (
         <View style={{ marginTop: 20 }}>
           <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
             Empleados del {selectedDate}
           </Text>
 
-          {assignedEmployees.length === 0 ? (
-            <Text style={{ opacity: 0.6 }}>
-              No hay empleados asignados aún.
-            </Text>
-          ) : (
-            <>
-              {/* HEADER DE TABLA */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  backgroundColor: "#e2e8f0",
-                  paddingVertical: 10,
-                  borderRadius: 6,
-                  paddingHorizontal: 6,
-                  alignItems: "center", // centra verticalmente
-                }}
-              >
-                <Text
-                  style={{ flex: 0.5, fontWeight: "700", textAlign: "center" }}
-                  numberOfLines={1}
+          <View style={{ maxHeight: 260 }}>
+            <FlatList
+              data={assignedEmployees}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (item.exception) {
+                      Alert.alert(
+                        "Motivo de la excepción",
+                        item.exceptionReason || "Sin motivo registrado"
+                      );
+                    }
+                  }}
                 >
-                  #
-                </Text>
-                <Text
-                  style={{ flex: 2, fontWeight: "700", textAlign: "center" }}
-                  numberOfLines={1}
-                >
-                  N° Empleado
-                </Text>
-                <Text
-                  style={{ flex: 2, fontWeight: "700", textAlign: "center" }}
-                  numberOfLines={1}
-                >
-                  Nombre
-                </Text>
-                <Text
-                  style={{ flex: 0.5, fontWeight: "700", textAlign: "center" }}
-                  numberOfLines={1}
-                >
-                  Acc
-                </Text>
-              </View>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      paddingVertical: 10,
+                      paddingHorizontal: 6,
+                      backgroundColor: "#f8f8f8",
+                      borderRadius: 8,
+                      marginTop: 6,
+                      alignItems: "center",
+                    }}
+                  >
+                    <Text style={{ flex: 0.5, textAlign: "center" }}>
+                      {index + 1}
+                    </Text>
 
-              <View style={{ maxHeight: 260 }}>
-                <FlatList
-                  data={assignedEmployees}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item, index }) => (
-                    <TouchableOpacity
-                      activeOpacity={0.7}
-                      onPress={() => {
-                        if (item.exception) {
-                          Alert.alert(
-                            "Motivo de la excepción",
-                            item.exceptionReason || "Sin motivo registrado"
-                          );
-                        }
+                    <Text
+                      style={{
+                        flex: 2,
+                        textAlign: "center",
+                        fontWeight: "600",
                       }}
                     >
-                      <View
-                        style={{
-                          flexDirection: "row",
-                          paddingVertical: 10,
-                          paddingHorizontal: 6,
-                          backgroundColor: "#f8f8f8",
-                          borderRadius: 8,
-                          marginTop: 6,
-                          alignItems: "center",
-                        }}
-                      >
-                        {/* # */}
-                        <Text style={{ flex: 0.5, textAlign: "center" }}>
-                          {index + 1}
-                        </Text>
+                      {item.number}
+                    </Text>
 
-                        {/* Número */}
+                    <View style={{ flex: 2, alignItems: "center" }}>
+                      <Text>{item.name}</Text>
+                      {item.exception && (
                         <Text
                           style={{
-                            flex: 2,
-                            textAlign: "center",
-                            fontWeight: "600",
+                            fontSize: 12,
+                            color: "#d97706",
+                            marginTop: 2,
                           }}
                         >
-                          {item.number}
+                          ⚠ Excepción
                         </Text>
+                      )}
+                    </View>
 
-                        {/* Nombre + Excepción */}
-                        <View style={{ flex: 2, alignItems: "center" }}>
-                          <Text style={{ textAlign: "center" }}>
-                            {item.name}
-                          </Text>
-
-                          {item.exception && (
-                            <Text
-                              style={{
-                                fontSize: 12,
-                                color: "#d97706",
-                                marginTop: 2,
-                              }}
-                            >
-                              ⚠ Excepción
-                            </Text>
-                          )}
-                        </View>
-
-                        {/* Acciones */}
-                        <TouchableOpacity
-                          onPress={() => removeEmployee(item.id)}
-                          style={{
-                            flex: 0.5,
-                            alignItems: "center",
-                            padding: 6,
-                          }}
-                        >
-                          <Ionicons
-                            name="trash-outline"
-                            size={22}
-                            color="#ff3b30"
-                          />
-                        </TouchableOpacity>
-                      </View>
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        removeEmployee(item.id);
+                      }}
+                      style={{ flex: 0.5, alignItems: "center" }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={22}
+                        color="#ff3b30"
+                      />
                     </TouchableOpacity>
-                  )}
-                  showsVerticalScrollIndicator
-                />
-              </View>
-            </>
-          )}
+                  </View>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
         </View>
       )}
 
@@ -434,89 +350,133 @@ export default function CalendarScreen() {
             }}
           >
             <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 10 }}>
-              Agregar empleado a {selectedDate}
+              Agregar empleado
             </Text>
 
-            {/* BUSCADOR */}
+            {/* BUSCAR */}
             <TextInput
               placeholder="Buscar empleado..."
+              value={search}
+              onChangeText={setSearch}
               style={{
                 backgroundColor: "#f2f2f6",
                 padding: 10,
                 borderRadius: 8,
                 marginBottom: 10,
               }}
-              value={search}
-              onChangeText={setSearch}
             />
 
-            {/* LISTA DE SUGERENCIAS solo cuando se escribe */}
             {search.length > 0 &&
-              selectedEmployee === null &&
+              !selectedEmployee &&
               filteredEmployees.map((emp) => (
                 <TouchableOpacity
                   key={emp.id}
                   onPress={() => {
                     setSelectedEmployee(emp);
-                    setSearch(""); // limpiar búsqueda
-                  }}
-                  style={{
-                    padding: 8,
-                    borderBottomWidth: 1,
-                    borderColor: "#eee",
+                    setSearch("");
                   }}
                 >
-                  <Text>
+                  <Text style={{ padding: 6 }}>
                     {emp.number} - {emp.name}
                   </Text>
                 </TouchableOpacity>
               ))}
 
-            {/* EMPLEADO SELECCIONADO */}
+            {/* SELECCIONADO */}
             {selectedEmployee && (
-              <View
-                style={{
-                  backgroundColor: "#eef2ff",
-                  padding: 12,
-                  borderRadius: 10,
-                  marginTop: 12,
-                }}
-              >
-                <Text style={{ fontWeight: "700" }}>Empleado seleccionado</Text>
-                <Text>Número: {selectedEmployee.number}</Text>
-                <Text>Nombre: {selectedEmployee.name}</Text>
-              </View>
-            )}
-
-            {selectedEmployee && isException && (
-              <View style={{ marginTop: 12 }}>
-                <Text style={{ fontWeight: "700", marginBottom: 6 }}>
-                  Motivo de la excepción
-                </Text>
-                <TextInput
-                  placeholder="Describe el motivo..."
-                  value={exceptionReason}
-                  onChangeText={setExceptionReason}
-                  multiline
+              <>
+                <View
                   style={{
-                    backgroundColor: "#f2f2f6",
+                    backgroundColor: "#eef2ff",
                     padding: 10,
                     borderRadius: 8,
-                    minHeight: 60,
-                    textAlignVertical: "top",
+                    marginTop: 10,
                   }}
-                />
-              </View>
+                >
+                  <Text>Número: {selectedEmployee.number}</Text>
+                  <Text>Nombre: {selectedEmployee.name}</Text>
+                </View>
+
+                {/* RADIO BUTTONS */}
+                <View style={{ marginTop: 12 }}>
+                  <TouchableOpacity onPress={() => setAssignMode("single")}>
+                    <Text>{assignMode === "single" ? "🔘" : "⚪"} 1 día</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setAssignMode("multiple");
+                      setShowMultiCalendar(true);
+                    }}
+                  >
+                    <Text>
+                      {assignMode === "multiple" ? "🔘" : "⚪"} Más de 1 día
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* CALENDARIO MULTI */}
+                {assignMode === "multiple" && showMultiCalendar && (
+                  <>
+                    <Calendar
+                      onDayPress={(day) => {
+                        setMultiDates((prev) =>
+                          prev.includes(day.dateString)
+                            ? prev.filter((d) => d !== day.dateString)
+                            : [...prev, day.dateString]
+                        );
+                      }}
+                      markedDates={multiDates.reduce((acc: any, d) => {
+                        acc[d] = {
+                          selected: true,
+                          selectedColor: "#4e73df",
+                        };
+                        return acc;
+                      }, {})}
+                    />
+
+                    <TouchableOpacity
+                      onPress={() => setShowMultiCalendar(false)}
+                      style={{
+                        backgroundColor: "#2f855a",
+                        padding: 8,
+                        borderRadius: 6,
+                        marginTop: 8,
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text style={{ color: "white" }}>OK</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+
+                {/* DÍAS SELECCIONADOS */}
+                {assignMode === "multiple" && multiDates.length > 0 && (
+                  <Text style={{ marginTop: 8 }}>
+                    Días: {multiDates.join(", ")}
+                  </Text>
+                )}
+
+                {/* EXCEPCIÓN */}
+                {isException && (
+                  <TextInput
+                    placeholder="Motivo de excepción"
+                    value={exceptionReason}
+                    onChangeText={setExceptionReason}
+                    multiline
+                    style={{
+                      backgroundColor: "#f2f2f6",
+                      padding: 10,
+                      borderRadius: 8,
+                      marginTop: 10,
+                    }}
+                  />
+                )}
+              </>
             )}
 
             {/* BOTONES */}
-            <View
-              style={{
-                flexDirection: "row",
-                gap: 10,
-                marginTop: 20,
-              }}
-            >
+            <View style={{ flexDirection: "row", marginTop: 20 }}>
               <TouchableOpacity
                 style={{
                   flex: 1,
@@ -525,8 +485,8 @@ export default function CalendarScreen() {
                   borderRadius: 8,
                   alignItems: "center",
                 }}
-                disabled={!selectedEmployee}
                 onPress={assignEmployee}
+                disabled={!selectedEmployee}
               >
                 <Text style={{ color: "white", fontWeight: "700" }}>
                   Aceptar
@@ -540,6 +500,7 @@ export default function CalendarScreen() {
                   padding: 12,
                   borderRadius: 8,
                   alignItems: "center",
+                  marginLeft: 10,
                 }}
                 onPress={() => setModalVisible(false)}
               >
