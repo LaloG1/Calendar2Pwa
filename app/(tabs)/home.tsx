@@ -10,7 +10,6 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../src/contexts/AuthContext";
-
 export default function HomeScreen() {
   const { signOut } = useAuth();
   const router = useRouter();
@@ -23,7 +22,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       {/* Avatar */}
       <Image
-        source={{ uri: "https://i.pravatar.cc/150" }}
+        source={require("../../assets/images/1212.png")}
         style={styles.avatar}
       />
 

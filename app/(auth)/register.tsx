@@ -1,9 +1,8 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { Alert, Button, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { useAuth } from "../../src/contexts/AuthContext";
-
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();
@@ -23,7 +22,7 @@ export default function RegisterScreen() {
 
   return (
     <LinearGradient
-      colors={["#ff6b6b", "#b98f33ff", "#41a0b6ff", "#3c57ccff"]}
+      colors={["#0A2463", "#1E90FF", "#40E0D0"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -48,13 +47,13 @@ export default function RegisterScreen() {
           style={styles.input}
         />
 
-        <View style={{ marginVertical: 6 }}>
-          <Button title="Registrarse" onPress={handleRegister} />
-        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Registrarse</Text>
+        </TouchableOpacity>
 
-        <View style={{ marginVertical: 6 }}>
-          <Button title="Volver" onPress={() => router.replace("/login")} />
-        </View>
+        <TouchableOpacity style={styles.secondaryButton} onPress={() => router.replace("/login")}>
+          <Text style={styles.secondaryButtonText}>Volver</Text>
+        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -63,27 +62,71 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center", // Centrado vertical
-    alignItems: "center",     // Centrado horizontal
+    justifyContent: "center",
+    alignItems: "center",
   },
   box: {
     width: "85%",
-    backgroundColor: "rgba(255,255,255,0.88)",
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    padding: 25,
+    borderRadius: 16,
+    shadowColor: "#0A2463",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 20,
+    fontSize: 28,
+    marginBottom: 25,
     textAlign: "center",
     fontWeight: "bold",
+    color: "#0A2463",
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#1E90FF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 18,
+    backgroundColor: "#FFFFFF",
+    fontSize: 16,
+    shadowColor: "#1E90FF",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  primaryButton: {
+    backgroundColor: "#1E90FF",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 15,
+    shadowColor: "#0A2463",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  secondaryButton: {
+    borderWidth: 1.5,
+    borderColor: "#1E90FF",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "bold",
+  },
+  secondaryButtonText: {
+    color: "#1E90FF",
+    fontSize: 17,
+    fontWeight: "bold",
   },
 });

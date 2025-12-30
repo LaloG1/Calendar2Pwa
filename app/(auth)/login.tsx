@@ -1,7 +1,13 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Button, StyleSheet, Text, TextInput, View } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useAuth } from "../../src/contexts/AuthContext";
 
 export default function LoginScreen() {
@@ -15,7 +21,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await signIn(email, password);
-      router.replace("/home"); // al HOME
+      router.replace("/home");
     } catch (e) {
       setError("Credenciales incorrectas");
     }
@@ -23,7 +29,7 @@ export default function LoginScreen() {
 
   return (
     <LinearGradient
-      colors={["#ff6b6b", "#b98f33ff", "#41a0b6ff", "#3c57ccff"]}
+      colors={["#0A2463", "#1E90FF", "#40E0D0"]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -49,13 +55,16 @@ export default function LoginScreen() {
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <View style={{ marginVertical: 6 }}>
-          <Button title="Ingresar" onPress={handleLogin} />
-        </View>
+        <TouchableOpacity style={styles.primaryButton} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Ingresar</Text>
+        </TouchableOpacity>
 
-        <View style={{ marginVertical: 6 }}>
-          <Button title="Crear cuenta" onPress={() => router.push("/register")} />
-        </View>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => router.push("/register")}
+        >
+          <Text style={styles.secondaryButtonText}>Crear cuenta</Text>
+        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -64,32 +73,78 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center", // centra vertical
-    alignItems: "center", // centra horizontal
+    justifyContent: "center",
+    alignItems: "center",
   },
   box: {
     width: "85%",
-    backgroundColor: "rgba(255,255,255,0.88)",
-    padding: 20,
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.92)",
+    padding: 25,
+    borderRadius: 16,
+    shadowColor: "#0A2463",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 20,
+    fontSize: 28,
+    marginBottom: 25,
     textAlign: "center",
     fontWeight: "bold",
+    color: "#0A2463",
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 12,
-    backgroundColor: "#fff",
+    borderWidth: 1.5,
+    borderColor: "#1E90FF",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 18,
+    backgroundColor: "#FFFFFF",
+    fontSize: 16,
+    shadowColor: "#1E90FF",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
   },
   error: {
-    color: "red",
-    marginBottom: 10,
+    color: "#FF4D4D",
+    marginBottom: 15,
     textAlign: "center",
+    fontWeight: "500",
+    fontSize: 15,
+  },
+  primaryButton: {
+    backgroundColor: "#1E90FF",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 15,
+    shadowColor: "#0A2463",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  secondaryButton: {
+    borderWidth: 1.5,
+    borderColor: "#1E90FF",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 17,
+    fontWeight: "bold",
+  },
+  secondaryButtonText: {
+    color: "#1E90FF",
+    fontSize: 17,
+    fontWeight: "bold",
   },
 });
