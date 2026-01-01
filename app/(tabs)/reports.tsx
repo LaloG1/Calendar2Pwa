@@ -6,6 +6,7 @@ import {
   Keyboard,
   Platform,
   SafeAreaView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,16 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { db } from "../../src/firebase/firebase";
+
+import { Asset } from "expo-asset";
+import * as FileSystem from "expo-file-system/legacy";
+
+import * as Print from "expo-print";
+import * as Sharing from "expo-sharing";
+import { Alert } from "react-native";
+import * as XLSX from "xlsx";
+
+import logo from "../../assets/images/1212.png";
 
 /* ---------------- TIPOS ---------------- */
 
@@ -52,6 +63,17 @@ export default function ReportesScreen() {
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(true);
+
+  const getLogoBase64 = async () => {
+    const asset = Asset.fromModule(logo);
+    await asset.downloadAsync();
+
+    const base64 = await FileSystem.readAsStringAsync(asset.localUri!, {
+      encoding: "base64",
+    });
+
+    return `data:image/png;base64,${base64}`;
+  };
 
   // Obtener todos los empleados únicos
   const allEmployees = useMemo(() => {
@@ -133,6 +155,121 @@ export default function ReportesScreen() {
     }));
   }, [confirmedDates, calendarData, selectedEmployee]);
 
+  const handleExport = async (type: "excel" | "pdf") => {
+    if (reportResults.length === 0) {
+      Alert.alert("Nada para exportar");
+      return;
+    }
+
+    const logoBase64 = await getLogoBase64();
+
+    const exportData = reportResults.map((r, i) => ({
+      ID: i + 1,
+      Número: r.number,
+      Nombre: r.name,
+      Fechas: r.dates
+        .map((d) =>
+          new Date(d).toLocaleDateString("es-ES", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "2-digit",
+          })
+        )
+        .join(", "),
+      Días: r.dates.length,
+    }));
+
+    if (type === "excel") {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+
+      const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
+      const uri =
+        (FileSystem as any).cacheDirectory + `reporte_${Date.now()}.xlsx`;
+      await FileSystem.writeAsStringAsync(uri, wbout, {
+        encoding: "base64",
+      });
+
+      await Sharing.shareAsync(uri);
+    } else {
+      const rows = exportData
+        .map(
+          (r) => `
+        <tr>
+          <td>${r.ID}</td>
+          <td>${r.Número}</td>
+          <td>${r.Nombre}</td>
+          <td>${r.Fechas}</td>
+          <td>${r.Días}</td>
+        </tr>`
+        )
+        .join("");
+
+      const html = `
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <style>
+      body { font-family: Arial; padding: 20px; }
+      .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .logo {
+        width: 80px;
+        margin-right: 16px;
+      }
+      h2 {
+        margin: 0;
+        color: #2563eb;
+      }
+      table {
+        width:100%;
+        border-collapse: collapse;
+      }
+      th, td {
+        border:1px solid #ccc;
+        padding:6px;
+        text-align:center;
+      }
+      th {
+        background:#2563eb;
+        color:white;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="header">
+      <img src="${logoBase64}" class="logo" />
+      <h2>Reporte de empleados</h2>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>N°</th>
+          <th>Nombre</th>
+          <th>Fechas</th>
+          <th>Días</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+      </tbody>
+    </table>
+  </body>
+</html>
+`;
+
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri);
+    }
+  };
+
   /* ---------------- CARGAR CALENDARIO ---------------- */
 
   useEffect(() => {
@@ -184,9 +321,26 @@ export default function ReportesScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       {/* Controles superiores - FIJOS (no hacen scroll) */}
       <View style={styles.controlsContainer}>
-        <Text style={styles.title}>Reportes</Text>
+        <View style={styles.headerRowTop}>
+          <Text style={styles.title}>Reportes</Text>
+
+          <TouchableOpacity
+            style={styles.exportBtn}
+            onPress={() =>
+              Alert.alert("Exportar", "Selecciona formato", [
+                { text: "Excel (.xlsx)", onPress: () => handleExport("excel") },
+                { text: "PDF (.pdf)", onPress: () => handleExport("pdf") },
+                { text: "Cancelar", style: "cancel" },
+              ])
+            }
+          >
+            <Ionicons name="download-outline" size={18} color="white" />
+            <Text style={styles.exportText}>Exportar</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* BÚSQUEDA DE EMPLEADO */}
         <View style={styles.searchContainer}>
@@ -486,7 +640,7 @@ export default function ReportesScreen() {
                     {
                       flex: 1.6,
                       justifyContent: "flex-start",
-                      alignItems: "flex-start",
+                      alignItems: "center",
                     },
                   ]}
                 >
@@ -537,10 +691,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#ffffff",
+    paddingTop:
+      Platform.OS === "android" ? (StatusBar.currentHeight ?? 0) + 10 : 0,
   },
   controlsContainer: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: Platform.OS === "android" ? 10 : 20,
     paddingBottom: 8,
   },
   title: {
@@ -677,13 +833,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f0",
     borderRadius: 8,
     marginTop: 6,
-    // NO usar alignItems aquí — cada celda lo maneja internamente
-    minHeight: 56, // altura mínima razonable
-  },
-  resultCell: {
-    fontSize: 14,
-    color: "#334155",
-    alignSelf: "center", // Centra verticalmente las celdas simples
+    minHeight: 56,
   },
   datesContainer: {
     justifyContent: "center",
@@ -691,6 +841,7 @@ const styles = StyleSheet.create({
   dateItem: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center", // 👈 NUEVO
     marginBottom: 2,
   },
   bullet: {
@@ -703,36 +854,52 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#334155",
     lineHeight: 20,
+    textAlign: "center", // 👈 opcional
   },
   resultCellWrapper: {
-    // contenedor que maneja alineación vertical por columna
     paddingVertical: 8,
   },
-
   resultCellIndex: {
     fontSize: 14,
     color: "#334155",
     fontWeight: "500",
   },
-
   resultCellNumber: {
     fontSize: 14,
     fontWeight: "600",
     color: "#334155",
   },
-
   resultCellName: {
     fontSize: 14,
     color: "#1e293b",
     fontWeight: "600",
     textAlign: "center",
     lineHeight: 20,
-    // numberOfLines={0} en el componente permite multi-línea
   },
-
   resultCellDays: {
     fontSize: 14,
     fontWeight: "700",
     color: "#2563eb",
+  },
+  headerRowTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  exportBtn: {
+    backgroundColor: "#2f855a",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+
+  exportText: {
+    color: "white",
+    marginLeft: 6,
+    fontWeight: "600",
   },
 });
