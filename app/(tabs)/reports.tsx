@@ -64,6 +64,11 @@ export default function ReportesScreen() {
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(true);
 
+  const formatDate = (dateString: string) => {
+    const [year, month, day] = dateString.split("-");
+    return `${day}/${month}/${year.slice(-2)}`;
+  };
+
   const getLogoBase64 = async () => {
     const asset = Asset.fromModule(logo);
     await asset.downloadAsync();
@@ -167,15 +172,7 @@ export default function ReportesScreen() {
       ID: i + 1,
       Número: r.number,
       Nombre: r.name,
-      Fechas: r.dates
-        .map((d) =>
-          new Date(d).toLocaleDateString("es-ES", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "2-digit",
-          })
-        )
-        .join(", "),
+      Fechas: r.dates.map(formatDate).join(", "),
       Días: r.dates.length,
     }));
 
@@ -685,13 +682,7 @@ export default function ReportesScreen() {
                   {item.dates.map((date, idx) => (
                     <View key={idx} style={styles.dateItem}>
                       <Text style={styles.bullet}>•</Text>
-                      <Text style={styles.dateText}>
-                        {new Date(date).toLocaleDateString("es-ES", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "2-digit",
-                        })}
-                      </Text>
+                      <Text style={styles.dateText}>{formatDate(date)}</Text>
                     </View>
                   ))}
                 </View>
