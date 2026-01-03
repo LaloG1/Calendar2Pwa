@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
   StyleSheet,
   Text,
@@ -10,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../../src/contexts/AuthContext";
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -22,6 +25,13 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     try {
       await signIn(email, password);
+
+      if (rememberEmail) {
+        await AsyncStorage.setItem("rememberedEmail", email);
+      } else {
+        await AsyncStorage.removeItem("rememberedEmail");
+      }
+
       router.replace("/home");
     } catch (e) {
       setError("Credenciales incorrectas");
@@ -29,6 +39,19 @@ export default function LoginScreen() {
   };
 
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberEmail, setRememberEmail] = useState(false);
+
+  useEffect(() => {
+    const loadSavedEmail = async () => {
+      const savedEmail = await AsyncStorage.getItem("rememberedEmail");
+      if (savedEmail) {
+        setEmail(savedEmail);
+        setRememberEmail(true);
+      }
+    };
+
+    loadSavedEmail();
+  }, []);
 
   return (
     <LinearGradient
@@ -71,6 +94,19 @@ export default function LoginScreen() {
             />
           </TouchableOpacity>
         </View>
+
+        <TouchableOpacity
+          style={styles.rememberContainer}
+          onPress={() => setRememberEmail((prev) => !prev)}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name={rememberEmail ? "checkbox" : "square-outline"}
+            size={22}
+            color="#1E90FF"
+          />
+          <Text style={styles.rememberText}>Recordar correo</Text>
+        </TouchableOpacity>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -181,5 +217,17 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 14,
     padding: 6,
+  },
+  rememberContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+
+  rememberText: {
+    marginLeft: 8,
+    fontSize: 15,
+    color: "#1f2937",
+    fontWeight: "500",
   },
 });
