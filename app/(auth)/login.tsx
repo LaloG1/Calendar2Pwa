@@ -74,6 +74,7 @@ export default function LoginScreen() {
 
         <View style={styles.passwordContainer}>
           <TextInput
+            keyboardType="numeric"
             placeholder="Contraseña"
             placeholderTextColor="#6b7280"
             secureTextEntry={!showPassword}

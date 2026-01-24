@@ -24,7 +24,11 @@
       "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.MANAGE_EXTERNAL_STORAGE"
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_MEDIA_AUDIO"
       ],
       "usesCleartextTraffic": true
     },
@@ -62,8 +66,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "e8bb2e2d-6d54-4ca4-b3e4-29030596efd9"
+        "projectId": "2d8faf82-a569-41e0-b02a-65ed5f85e08e"
       }
-    }
+    },
+    "owner": "eduardovico14"
   }
 }
