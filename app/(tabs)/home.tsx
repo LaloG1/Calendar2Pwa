@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useRef } from "react";
 import {
@@ -37,12 +36,6 @@ export default function HomeScreen() {
           onPress={() => router.push("/calendar")}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name="calendar-outline"
-            size={24}
-            color="white"
-            style={styles.icon}
-          />
           <Text style={styles.cardText}>Calendario</Text>
         </TouchableOpacity>
 
@@ -51,12 +44,6 @@ export default function HomeScreen() {
           onPress={() => router.push("/reports")}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name="document-text-outline"
-            size={24}
-            color="white"
-            style={styles.icon}
-          />
           <Text style={styles.cardText}>Reportes</Text>
         </TouchableOpacity>
       </View>
@@ -68,12 +55,6 @@ export default function HomeScreen() {
           onPress={() => router.push("/employees")}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name="people-outline"
-            size={24}
-            color="white"
-            style={styles.icon}
-          />
           <Text style={styles.cardText}>Empleados</Text>
         </TouchableOpacity>
       </View>
@@ -82,7 +63,6 @@ export default function HomeScreen() {
       {/* Footer fijo abajo */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
-          <Ionicons name="warning-outline" size={20} color="white" />
           <Text style={styles.logoutText}>Cerrar sesión</Text>
         </TouchableOpacity>
       </View>

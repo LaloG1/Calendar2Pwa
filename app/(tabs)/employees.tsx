@@ -147,22 +147,36 @@ export default function EmployeesScreen() {
   //  Eliminar con confirmación
   // -------------------------
   const confirmDelete = (id: string) => {
-    Alert.alert("Eliminar empleado", "¿Deseas eliminar este registro?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Eliminar",
-        style: "destructive",
-        onPress: () => deleteEmployee(id),
-      },
-    ]);
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("¿Deseas eliminar este registro?");
+      if (confirmed) {
+        deleteEmployee(id);
+      }
+    } else {
+      Alert.alert("Eliminar empleado", "¿Deseas eliminar este registro?", [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: () => deleteEmployee(id),
+        },
+      ]);
+    }
   };
 
   const deleteEmployee = async (id: string) => {
     try {
       await deleteDoc(doc(db, "employees", id));
+      // ✅ Opcional: confirmación visual
+      console.log("Empleado eliminado:", id);
     } catch (err) {
-      console.error("deleteEmployee error:", err);
-      Alert.alert("Error", "No se pudo eliminar.");
+      console.error("Error al eliminar empleado:", err);
+      // En web, Alert.alert a veces no aparece
+      if (Platform.OS === "web") {
+        window.alert("Error al eliminar: " + (err as Error).message);
+      } else {
+        Alert.alert("Error", "No se pudo eliminar.");
+      }
     }
   };
 
@@ -376,9 +390,9 @@ export default function EmployeesScreen() {
                 {/* ✅ SOLO ELIMINAR — botón de editar REMOVIDO */}
                 <TouchableOpacity
                   onPress={() => confirmDelete(item.id)}
-                  style={styles.iconBtn}
+                  style={styles.deleteButton}
                 >
-                  <Ionicons name="trash-outline" size={20} color="#ff3b30" />
+                  <Text style={styles.deleteButtonText}>Elim</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -516,7 +530,7 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: "row",
     justifyContent: "center",
-    width: 60, // reducido porque solo hay un botón
+    paddingHorizontal: 8,
   },
   iconBtn: { padding: 6 },
   modalBg: {
@@ -557,5 +571,19 @@ const styles = StyleSheet.create({
   colId: {
     width: 40, // ✅ angosto
     textAlign: "center",
+  },
+  deleteButton: {
+    backgroundColor: "#ff3b30",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 70,
+  },
+  deleteButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
   },
 });

@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import {
   collection,
   deleteDoc,
@@ -12,6 +11,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   Text,
   TextInput,
   TouchableOpacity,
@@ -51,7 +51,7 @@ export default function CalendarScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null
+    null,
   );
 
   /* ---------------- CARGAR EMPLEADOS ---------------- */
@@ -95,7 +95,7 @@ export default function CalendarScreen() {
       (e) =>
         !assignedIds.includes(e.id) &&
         (String(e.number).includes(search) ||
-          e.name.toLowerCase().includes(search.toLowerCase()))
+          e.name.toLowerCase().includes(search.toLowerCase())),
     );
   }, [search, employees, selectedDate, calendarData]);
 
@@ -212,18 +212,27 @@ export default function CalendarScreen() {
 
   /* ---------------- ELIMINAR ---------------- */
   const confirmRemoveEmployee = (emp: Employee) => {
-    Alert.alert(
-      "Eliminar empleado",
-      `¿Deseas quitar a ${emp.name} del día ${selectedDate}?`,
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: () => removeEmployee(emp.id),
-        },
-      ]
-    );
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        `¿Deseas quitar a ${emp.name} del día ${selectedDate}?`,
+      );
+      if (confirmed) {
+        removeEmployee(emp.id);
+      }
+    } else {
+      Alert.alert(
+        "Eliminar empleado",
+        `¿Deseas quitar a ${emp.name} del día ${selectedDate}?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Eliminar",
+            style: "destructive",
+            onPress: () => removeEmployee(emp.id),
+          },
+        ],
+      );
+    }
   };
 
   const removeEmployee = async (empId: string) => {
@@ -307,10 +316,10 @@ export default function CalendarScreen() {
                       color: isToday
                         ? "#2563eb" // 🔵 hoy siempre azul
                         : state === "disabled"
-                        ? "#d1d5db"
-                        : isSelected
-                        ? "white"
-                        : "#111827",
+                          ? "#d1d5db"
+                          : isSelected
+                            ? "white"
+                            : "#111827",
                       fontWeight: isToday || isSelected ? "700" : "500",
                     }}
                   >
@@ -350,7 +359,6 @@ export default function CalendarScreen() {
         }}
         onPress={openAddModal}
       >
-        <Ionicons name="add-circle-outline" size={20} color="white" />
         <Text style={{ color: "white", marginLeft: 6, fontWeight: "700" }}>
           Agregar empleado
         </Text>
@@ -374,7 +382,7 @@ export default function CalendarScreen() {
                     if (item.exception) {
                       Alert.alert(
                         "Motivo de la excepción",
-                        item.exceptionReason || "Sin motivo registrado"
+                        item.exceptionReason || "Sin motivo registrado",
                       );
                     }
                   }}
@@ -424,13 +432,26 @@ export default function CalendarScreen() {
                         e.stopPropagation();
                         confirmRemoveEmployee(item);
                       }}
-                      style={{ flex: 0.5, alignItems: "center" }}
+                      style={{
+                        flex: 0.5,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: "#ff3b30",
+                        paddingHorizontal: 8,
+                        paddingVertical: 4,
+                        borderRadius: 4,
+                        minWidth: 40,
+                      }}
                     >
-                      <Ionicons
-                        name="trash-outline"
-                        size={22}
-                        color="#ff3b30"
-                      />
+                      <Text
+                        style={{
+                          color: "white",
+                          fontWeight: "600",
+                          fontSize: 12,
+                        }}
+                      >
+                        Elim
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -534,7 +555,7 @@ export default function CalendarScreen() {
                         setMultiDates((prev) =>
                           prev.includes(day.dateString)
                             ? prev.filter((d) => d !== day.dateString)
-                            : [...prev, day.dateString]
+                            : [...prev, day.dateString],
                         );
                       }}
                       markedDates={multiDates.reduce((acc: any, d) => {
