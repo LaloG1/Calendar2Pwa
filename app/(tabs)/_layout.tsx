@@ -1,5 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
-import Foundation from "@expo/vector-icons/Foundation";
 import { Tabs, useRouter } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -32,9 +30,7 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: "Inicio",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
+          tabBarIcon: () => "🏠",
         }}
       />
 
@@ -42,9 +38,7 @@ export default function TabsLayout() {
         name="calendar"
         options={{
           title: "Calendario",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-number-outline" size={24} color="black" />
-          ),
+          tabBarIcon: () => "📅",
         }}
       />
 
@@ -52,9 +46,7 @@ export default function TabsLayout() {
         name="reports"
         options={{
           title: "Reportes",
-          tabBarIcon: ({ color, size }) => (
-            <Foundation name="clipboard-notes" size={24} color="black" />
-          ),
+          tabBarIcon: () => "📊",
         }}
       />
 
@@ -62,9 +54,7 @@ export default function TabsLayout() {
         name="employees"
         options={{
           title: "Empleados",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={24} color="black" />
-          ),
+          tabBarIcon: () => "👥",
         }}
       />
     </Tabs>
