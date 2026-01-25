@@ -74,7 +74,7 @@ export default function EmployeesScreen() {
       (err) => {
         console.error("onSnapshot error:", err);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsub();
@@ -89,7 +89,7 @@ export default function EmployeesScreen() {
     return employees.filter(
       (e) =>
         String(e.number).toLowerCase().includes(s) ||
-        (e.name || "").toLowerCase().includes(s)
+        (e.name || "").toLowerCase().includes(s),
     );
   }, [employees, search]);
 
@@ -228,7 +228,7 @@ export default function EmployeesScreen() {
               <td style="padding:6px;border:1px solid #ccc">${i + 1}</td>
               <td style="padding:6px;border:1px solid #ccc">${d.number}</td>
               <td style="padding:6px;border:1px solid #ccc">${d.name}</td>
-            </tr>`
+            </tr>`,
         )
         .join("");
 

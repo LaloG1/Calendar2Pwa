@@ -1,25 +1,21 @@
 // src/firebase/firebase.ts
-import { getApps, initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth"; // 👈 Agrega esta línea
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDH3A6l6YaI4VEnHGW988nEJQhnANLpQYc",
-  authDomain: "calendar2-628e3.firebaseapp.com",
-  projectId: "calendar2-628e3",
-  storageBucket: "calendar2-628e3.firebasestorage.app",
-  appId: "1:891540603726:android:99d49b301b96c9e145941f"
+  apiKey: "AIzaSyBAgJRzE81RgKv1LOkO0yLH_ikCfUzgwLA",
+  authDomain: "calendar2pwa.firebaseapp.com",
+  projectId: "calendar2pwa",
+  storageBucket: "calendar2pwa.firebasestorage.app",
+  messagingSenderId: "647981191870",
+  appId: "1:647981191870:web:77f1971b435f53abfe04ef",
+  measurementId: "G-M6TVB7NF7Z",
 };
 
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
+// Inicializa Firebase
+const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth();
-
-// Exportar la instancia de Firestore
+// Exporta Firestore y Auth
 export const db = getFirestore(app);
-
+export const auth = getAuth(app); // 👈 ¡Esta línea es clave!

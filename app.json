@@ -34,7 +34,31 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "pwa": {
+        "icon": "./assets/images/icon.png",
+        "splash": {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        },
+        "manifest": {
+          "name": "MyCalendar2",
+          "short_name": "MyCal2",
+          "start_url": "/",
+          "display": "standalone",
+          "orientation": "portrait",
+          "theme_color": "#ffffff",
+          "background_color": "#ffffff",
+          "icons": [
+            {
+              "src": "./assets/images/icon.png",
+              "sizes": "512x512",
+              "type": "image/png"
+            }
+          ]
+        }
+      }
     },
     "plugins": [
       "expo-router",

@@ -1,26 +1,21 @@
-// src/firebase/firebase.ts
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getApps, initializeApp } from "firebase/app";
-import {
-  getReactNativePersistence,
-  initializeAuth,
-} from "firebase/auth";
+// Import the functions you need from the SDKs you need
+import { getAnalytics } from "firebase/analytics";
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "TU_API_KEY",
-  authDomain: "TU_AUTH_DOMAIN",
-  projectId: "TU_PROJECT_ID",
-  appId: "TU_APP_ID",
+  apiKey: "AIzaSyBAgJRzE81RgKv1LOkO0yLH_ikCfUzgwLA",
+  authDomain: "calendar2pwa.firebaseapp.com",
+  projectId: "calendar2pwa",
+  storageBucket: "calendar2pwa.firebasestorage.app",
+  messagingSenderId: "647981191870",
+  appId: "1:647981191870:web:7e2e6ae0fb1ad252fe04ef",
+  measurementId: "G-NQZRZJX9SP",
 };
 
-let app;
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApps()[0];
-}
-
-// Inicializa Auth con persistencia para React Native
-export const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
