@@ -12,6 +12,7 @@ import {
   FlatList,
   Modal,
   Platform,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -419,85 +420,115 @@ export default function CalendarScreen() {
               data={assignedEmployees}
               keyExtractor={(item) => item.id}
               renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => {
-                    if (item.exception) {
-                      Alert.alert(
-                        "Motivo de la excepción",
-                        item.exceptionReason || "Sin motivo registrado",
-                      );
-                    }
+                <View
+                  style={{
+                    flexDirection: "row",
+                    paddingVertical: 10,
+                    paddingHorizontal: 6,
+                    backgroundColor: "#f8f8f8",
+                    borderRadius: 8,
+                    marginTop: 6,
+                    alignItems: "center",
                   }}
                 >
-                  <View
+                  {/* ID */}
+                  <Text style={{ flex: 0.5, textAlign: "center" }}>
+                    {index + 1}
+                  </Text>
+
+                  {/* Número */}
+                  <Text
                     style={{
-                      flexDirection: "row",
-                      paddingVertical: 10,
-                      paddingHorizontal: 6,
-                      backgroundColor: "#f8f8f8",
-                      borderRadius: 8,
-                      marginTop: 6,
-                      alignItems: "center",
+                      flex: 2,
+                      textAlign: "center",
+                      fontWeight: "600",
                     }}
                   >
-                    <Text style={{ flex: 0.5, textAlign: "center" }}>
-                      {index + 1}
-                    </Text>
+                    {item.number}
+                  </Text>
 
-                    <Text
-                      style={{
-                        flex: 2,
-                        textAlign: "center",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {item.number}
-                    </Text>
+                  {/* Nombre + Tipo + Excepción */}
+                  <View style={{ flex: 2, alignItems: "center" }}>
+                    <Text>{item.name}</Text>
 
-                    <View style={{ flex: 2, alignItems: "center" }}>
-                      <Text>{item.name}</Text>
-                      {item.exception && (
+                    {/* Badge de tipo */}
+                    {item.tipo && (
+                      <View
+                        style={[
+                          styles.typeBadge,
+                          {
+                            backgroundColor:
+                              item.tipo === "vacaciones"
+                                ? "#dbeafe" // azul claro
+                                : item.tipo === "permiso"
+                                  ? "#dcfce7" // verde claro
+                                  : "#fee2e2", // rojo claro (falta)
+                          },
+                        ]}
+                      >
                         <Text
-                          style={{
-                            fontSize: 12,
-                            color: "#d97706",
-                            marginTop: 2,
-                          }}
+                          style={[
+                            styles.typeBadgeText,
+                            {
+                              color:
+                                item.tipo === "vacaciones"
+                                  ? "VAC"
+                                  : item.tipo === "permiso"
+                                    ? "PER"
+                                    : "FAL",
+                            },
+                          ]}
                         >
-                          ⚠ Excepción
+                          {item.tipo === "vacaciones"
+                            ? "Vac"
+                            : item.tipo === "permiso"
+                              ? "Per"
+                              : "Fal"}
                         </Text>
-                      )}
-                    </View>
+                      </View>
+                    )}
 
-                    <TouchableOpacity
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        confirmRemoveEmployee(item);
-                      }}
-                      style={{
-                        flex: 0.5,
-                        alignItems: "center",
-                        justifyContent: "center",
-                        backgroundColor: "#ff3b30",
-                        paddingHorizontal: 8,
-                        paddingVertical: 4,
-                        borderRadius: 4,
-                        minWidth: 40,
-                      }}
-                    >
+                    {/* Advertencia de excepción */}
+                    {item.exception && (
                       <Text
                         style={{
-                          color: "white",
-                          fontWeight: "600",
                           fontSize: 12,
+                          color: "#d97706",
+                          marginTop: 2,
                         }}
                       >
-                        Elim
+                        ⚠ Excepción
                       </Text>
-                    </TouchableOpacity>
+                    )}
                   </View>
-                </TouchableOpacity>
+
+                  {/* Botón Eliminar */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      confirmRemoveEmployee(item);
+                    }}
+                    style={{
+                      flex: 0.5,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "#ff3b30",
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 4,
+                      minWidth: 40,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: "white",
+                        fontWeight: "600",
+                        fontSize: 12,
+                      }}
+                    >
+                      Elim
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
             />
           </View>
@@ -775,3 +806,19 @@ export default function CalendarScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  typeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    marginTop: 4,
+    minWidth: 36,
+    alignItems: "center",
+  },
+  typeBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase", // opcional, si quieres MAYÚS
+  },
+});
