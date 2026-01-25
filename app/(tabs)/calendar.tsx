@@ -37,6 +37,12 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState(true);
   const EMPTY_SELECTED_COLOR = "#38bdf8"; // azul cielo
 
+  // Dentro de CalendarScreen()
+  const [assignmentType, setAssignmentType] = useState<
+    "vacaciones" | "permiso" | "falta" | null
+  >(null);
+  const [showTypeModal, setShowTypeModal] = useState(false); // Modal de selección de tipo
+
   const [isException, setIsException] = useState(false);
   const [exceptionReason, setExceptionReason] = useState("");
 
@@ -134,6 +140,57 @@ export default function CalendarScreen() {
     setSelectedDate(day.dateString);
   };
 
+  //Nueva función para manejar la selección de tipo:
+  const handleSelectType = (type: "vacaciones" | "permiso" | "falta") => {
+    setShowTypeModal(false);
+    setAssignmentType(type);
+
+    const count = calendarData[selectedDate!]?.employees?.length || 0;
+
+    if (type === "vacaciones") {
+      if (count < 4) {
+        // Hay disponibilidad → asignación normal
+        openEmployeeSelectionModal(false, type);
+      } else {
+        // No hay disponibilidad → excepción
+        if (Platform.OS === "web") {
+          const confirmed = window.confirm(
+            "Este día ya tiene 4 empleados.\n¿Deseas agregar una excepción de vacaciones?",
+          );
+          if (confirmed) {
+            openEmployeeSelectionModal(true, type);
+          }
+        } else {
+          Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Agregar excepción",
+              onPress: () => openEmployeeSelectionModal(true, type),
+            },
+          ]);
+        }
+      }
+    } else {
+      // Permiso o falta: siempre permitido, sin excepción
+      openEmployeeSelectionModal(false, type);
+    }
+  };
+
+  const openEmployeeSelectionModal = (
+    exception: boolean,
+    type: "vacaciones" | "permiso" | "falta",
+  ) => {
+    setIsException(exception);
+    setExceptionReason("");
+    setAssignMode("single");
+    setMultiDates([]);
+    setShowMultiCalendar(false);
+    setSearch("");
+    setSelectedEmployee(null);
+    setAssignmentType(type);
+    setModalVisible(true);
+  };
+
   /* ---------------- ABRIR MODAL ---------------- */
   const openAddModal = () => {
     if (!selectedDate) {
@@ -145,43 +202,13 @@ export default function CalendarScreen() {
       return;
     }
 
-    const count = calendarData[selectedDate]?.employees?.length || 0;
-
-    const open = (exception: boolean) => {
-      setIsException(exception);
-      setExceptionReason("");
-      setAssignMode("single");
-      setMultiDates([]);
-      setShowMultiCalendar(false);
-      setSearch("");
-      setSelectedEmployee(null);
-      setModalVisible(true);
-    };
-
-    if (count >= 4) {
-      // 🌐 En web: usar window.confirm
-      if (Platform.OS === "web") {
-        const confirmed = window.confirm(
-          "Este día ya tiene 4 empleados.\n¿Deseas agregar una excepción?",
-        );
-        if (confirmed) {
-          open(true);
-        }
-      } else {
-        // 📱 En móvil: usar Alert.alert
-        Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
-          { text: "Cancelar", style: "cancel" },
-          { text: "Agregar excepción", onPress: () => open(true) },
-        ]);
-      }
-    } else {
-      open(false);
-    }
+    // Mostrar modal para elegir tipo
+    setShowTypeModal(true);
   };
 
   /* ---------------- GUARDAR ---------------- */
   const assignEmployee = async () => {
-    if (!selectedEmployee) return;
+    if (!selectedEmployee || !assignmentType) return;
 
     const dates =
       assignMode === "single"
@@ -211,6 +238,7 @@ export default function CalendarScreen() {
           ...selectedEmployee,
           exception: isException,
           exceptionReason: isException ? exceptionReason : null,
+          tipo: assignmentType, // 👈 ¡Nuevo campo!
         };
 
         await setDoc(ref, { employees: [...current, employeeToSave] });
@@ -218,6 +246,7 @@ export default function CalendarScreen() {
 
       Alert.alert("Asignación exitosa");
       setModalVisible(false);
+      setAssignmentType(null);
     } catch (err) {
       console.error(err);
       Alert.alert("Error");
@@ -655,6 +684,91 @@ export default function CalendarScreen() {
                 <Text style={{ fontWeight: "700" }}>Cancelar</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de selección de tipo */}
+      <Modal visible={showTypeModal} transparent animationType="fade">
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "rgba(0,0,0,0.5)",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "white",
+              padding: 20,
+              borderRadius: 12,
+              width: "80%",
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: "700",
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              Selecciona el tipo
+            </Text>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#dbeafe",
+                padding: 12,
+                borderRadius: 8,
+                marginBottom: 8,
+                alignItems: "center",
+              }}
+              onPress={() => handleSelectType("vacaciones")}
+            >
+              <Text style={{ color: "#1d4ed8", fontWeight: "600" }}>
+                Vacaciones
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#dcfce7",
+                padding: 12,
+                borderRadius: 8,
+                marginBottom: 8,
+                alignItems: "center",
+              }}
+              onPress={() => handleSelectType("permiso")}
+            >
+              <Text style={{ color: "#16a34a", fontWeight: "600" }}>
+                Permiso
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#fee2e2",
+                padding: 12,
+                borderRadius: 8,
+                alignItems: "center",
+              }}
+              onPress={() => handleSelectType("falta")}
+            >
+              <Text style={{ color: "#dc2626", fontWeight: "600" }}>Falta</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{
+                marginTop: 16,
+                padding: 8,
+                alignItems: "center",
+              }}
+              onPress={() => setShowTypeModal(false)}
+            >
+              <Text style={{ color: "#6b7280" }}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
