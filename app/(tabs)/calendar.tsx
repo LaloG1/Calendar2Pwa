@@ -137,7 +137,11 @@ export default function CalendarScreen() {
   /* ---------------- ABRIR MODAL ---------------- */
   const openAddModal = () => {
     if (!selectedDate) {
-      Alert.alert("Selecciona un día primero");
+      if (Platform.OS === "web") {
+        window.alert("Selecciona un día primero");
+      } else {
+        Alert.alert("Selecciona un día primero");
+      }
       return;
     }
 
@@ -155,14 +159,24 @@ export default function CalendarScreen() {
     };
 
     if (count >= 4) {
-      Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
-        { text: "Cancelar", style: "cancel" },
-        { text: "Agregar excepción", onPress: () => open(true) },
-      ]);
-      return;
+      // 🌐 En web: usar window.confirm
+      if (Platform.OS === "web") {
+        const confirmed = window.confirm(
+          "Este día ya tiene 4 empleados.\n¿Deseas agregar una excepción?",
+        );
+        if (confirmed) {
+          open(true);
+        }
+      } else {
+        // 📱 En móvil: usar Alert.alert
+        Alert.alert("Límite alcanzado", "Este día ya tiene 4 empleados.", [
+          { text: "Cancelar", style: "cancel" },
+          { text: "Agregar excepción", onPress: () => open(true) },
+        ]);
+      }
+    } else {
+      open(false);
     }
-
-    open(false);
   };
 
   /* ---------------- GUARDAR ---------------- */
