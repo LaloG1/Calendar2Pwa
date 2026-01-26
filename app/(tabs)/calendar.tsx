@@ -38,6 +38,10 @@ export default function CalendarScreen() {
   const [loading, setLoading] = useState(true);
   const EMPTY_SELECTED_COLOR = "#38bdf8"; // azul cielo
 
+  const [filterType, setFilterType] = useState<
+    "all" | "vacaciones" | "permiso" | "falta"
+  >("all");
+
   // Dentro de CalendarScreen()
   const [assignmentType, setAssignmentType] = useState<
     "vacaciones" | "permiso" | "falta" | null
@@ -295,10 +299,19 @@ export default function CalendarScreen() {
     }
   };
 
-  const assignedEmployees =
+  type CalendarEmployee = Employee & {
+    tipo?: "vacaciones" | "permiso" | "falta";
+  };
+
+  const assignedEmployees: CalendarEmployee[] =
     selectedDate && calendarData[selectedDate]?.employees
-      ? calendarData[selectedDate].employees
+      ? (calendarData[selectedDate].employees as CalendarEmployee[])
       : [];
+
+  const filteredAssignedEmployees = useMemo(() => {
+    if (filterType === "all") return assignedEmployees;
+    return assignedEmployees.filter((emp) => emp.tipo === filterType);
+  }, [assignedEmployees, filterType]);
   /* ---------------- LOADING ---------------- */
   if (loading) {
     return (
@@ -309,9 +322,17 @@ export default function CalendarScreen() {
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: 40, paddingHorizontal: 12 }}>
+    <View
+      style={{
+        flex: 1,
+        paddingTop: Platform.OS === "web" ? 0 : 40,
+        paddingHorizontal: 12,
+      }}
+    >
       {/* CALENDARIO PRINCIPAL */}
+      {/* @ts-ignore */}
       <Calendar
+        locale="es-Es" // 👈 ¡Esto cambia todo a español!
         markedDates={marked}
         markingType="custom"
         dayComponent={({ date, state, marking }) => {
@@ -408,6 +429,79 @@ export default function CalendarScreen() {
         </Text>
       </TouchableOpacity>
 
+      {/* Filtros de tipo */}
+      {selectedDate && (
+        <View style={styles.filterContainer}>
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterType === "all" && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterType("all")}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filterType === "all" && styles.filterButtonTextActive,
+              ]}
+            >
+              Todos
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterType === "vacaciones" && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterType("vacaciones")}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filterType === "vacaciones" && styles.filterButtonTextActive,
+              ]}
+            >
+              Vacaciones
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterType === "permiso" && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterType("permiso")}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filterType === "permiso" && styles.filterButtonTextActive,
+              ]}
+            >
+              Permiso
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+              filterType === "falta" && styles.filterButtonActive,
+            ]}
+            onPress={() => setFilterType("falta")}
+          >
+            <Text
+              style={[
+                styles.filterButtonText,
+                filterType === "falta" && styles.filterButtonTextActive,
+              ]}
+            >
+              Falta
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* TABLA */}
       {selectedDate && (
         <View style={{ marginTop: 20 }}>
@@ -417,7 +511,7 @@ export default function CalendarScreen() {
 
           <View style={{ maxHeight: 260 }}>
             <FlatList
-              data={assignedEmployees}
+              data={filteredAssignedEmployees}
               keyExtractor={(item) => item.id}
               renderItem={({ item, index }) => (
                 <View
@@ -459,10 +553,10 @@ export default function CalendarScreen() {
                           {
                             backgroundColor:
                               item.tipo === "vacaciones"
-                                ? "#dbeafe" // azul claro
+                                ? "#62b369" // azul claro
                                 : item.tipo === "permiso"
-                                  ? "#dcfce7" // verde claro
-                                  : "#fee2e2", // rojo claro (falta)
+                                  ? "#b1a82c" // verde claro
+                                  : "#c05d5d", // rojo claro (falta)
                           },
                         ]}
                       >
@@ -820,5 +914,29 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "600",
     textTransform: "uppercase", // opcional, si quieres MAYÚS
+  },
+  filterContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 12,
+    marginBottom: 12,
+  },
+  filterButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: "#e2e8f0",
+  },
+  filterButtonActive: {
+    backgroundColor: "#4e73df",
+  },
+  filterButtonText: {
+    fontSize: 12,
+    color: "#4a5568",
+    fontWeight: "600",
+  },
+  filterButtonTextActive: {
+    color: "white",
   },
 });
