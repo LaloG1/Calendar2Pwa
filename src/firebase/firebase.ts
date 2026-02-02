@@ -4,13 +4,11 @@ import { getAuth } from "firebase/auth"; // 👈 Agrega esta línea
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBAgJRzE81RgKv1LOkO0yLH_ikCfUzgwLA",
-  authDomain: "calendar2pwa.firebaseapp.com",
-  projectId: "calendar2pwa",
-  storageBucket: "calendar2pwa.firebasestorage.app",
-  messagingSenderId: "647981191870",
-  appId: "1:647981191870:web:77f1971b435f53abfe04ef",
-  measurementId: "G-M6TVB7NF7Z",
+  apiKey: "AIzaSyDH3A6l6YaI4VEnHGW988nEJQhnANLpQYc",
+  authDomain: "calendar2-628e3.firebaseapp.com",
+  projectId: "calendar2-628e3",
+  storageBucket: "calendar2-628e3.firebasestorage.app",
+  appId: "1:891540603726:android:99d49b301b96c9e145941f",
 };
 
 // Inicializa Firebase
