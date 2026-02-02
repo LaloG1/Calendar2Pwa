@@ -16,17 +16,6 @@ import {
 import { Calendar } from "react-native-calendars";
 import { db } from "../../src/firebase/firebase";
 
-import { Asset } from "expo-asset";
-import Constants from "expo-constants";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
-
-import * as Print from "expo-print";
-import { Alert } from "react-native";
-import * as XLSX from "xlsx";
-
-import logo from "../../assets/images/1212.png";
-
 /* ---------------- TIPOS ---------------- */
 
 type Employee = {
@@ -65,151 +54,9 @@ export default function ReportesScreen() {
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
   const [showCalendar, setShowCalendar] = useState(true);
 
-  const getSafeDirectory = () => {
-    if (FileSystem.documentDirectory) {
-      return FileSystem.documentDirectory;
-    }
-
-    if (FileSystem.cacheDirectory) {
-      return FileSystem.cacheDirectory;
-    }
-
-    // ⚠️ Expo Go / Web fallback
-    console.warn("Usando fallback temporal (Expo Go / Web)");
-    return FileSystem.cacheDirectory ?? "";
-  };
-
-  const saveToDownloads = async (fileUri: string, fileName: string) => {
-    try {
-      const sourceInfo = await FileSystem.getInfoAsync(fileUri);
-      if (!sourceInfo.exists) {
-        throw new Error("El archivo fuente no existe.");
-      }
-
-      const mimeType = getMimeType(fileName);
-
-      const shareableUri = fileUri;
-
-      Alert.alert(
-        "Exportar reporte",
-        `¿Deseas guardar o compartir el archivo "${fileName}"?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Compartir",
-            onPress: async () => {
-              await Sharing.shareAsync(shareableUri, {
-                mimeType,
-                dialogTitle: "Guardar reporte",
-              });
-            },
-          },
-        ],
-      );
-
-      if (Platform.OS === "android") {
-        Alert.alert(
-          "Guardar en Descargas",
-          '1. Selecciona una app como:\n   • Archivos de Google\n   • Gestor de archivos\n   • Descargas\n2. Luego elige la carpeta "Descargas".\n3. Toca "Guardar".',
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Continuar",
-              onPress: async () => {
-                try {
-                  await Sharing.shareAsync(shareableUri, {
-                    mimeType,
-                    dialogTitle: "Guardar reporte",
-                  });
-                } catch (e: any) {
-                  console.warn("Sharing falló:", e.message);
-                  Alert.alert("Error", "No se pudo compartir el archivo.");
-                }
-              },
-            },
-          ],
-        );
-      } else if (Platform.OS === "ios") {
-        await Sharing.shareAsync(shareableUri, {
-          mimeType,
-          UTI: getUTI(mimeType),
-        });
-      }
-    } catch (error: any) {
-      console.error("[saveToDownloads] Error:", error);
-      Alert.alert("Error", error.message || "No se pudo iniciar el guardado.");
-    }
-  };
-
-  // Fallback: guardar en caché interno y mostrar ruta
-  const saveToInternalCache = async (fileUri: string, fileName: string) => {
-    if (!FileSystem.cacheDirectory) {
-      throw new Error("cacheDirectory no disponible");
-    }
-
-    const destPath = `${FileSystem.cacheDirectory}Download/${fileName}`;
-    await FileSystem.makeDirectoryAsync(
-      `${FileSystem.cacheDirectory}Download/`,
-      { intermediates: true },
-    );
-    await FileSystem.copyAsync({ from: fileUri, to: destPath });
-
-    const appId = Constants.expoConfig?.android?.package || "com.example.app";
-    const instructions =
-      Platform.OS === "android"
-        ? `Para acceder al archivo:\n\n1. Abre un gestor de archivos (ej. "Archivos de Google").\n2. Ve a:\n   Interno → Android → data → ${appId} → cache → Download\n3. Copia o comparte el archivo desde allí.`
-        : 'El archivo se guardó temporalmente. Usa "Compartir" para guardarlo permanentemente.';
-
-    Alert.alert(
-      "✅ Guardado (interno)",
-      `Nombre: ${fileName}\n\n${instructions}`,
-      [
-        { text: "OK", style: "default" },
-        Platform.OS === "android"
-          ? {
-              text: "Abrir carpeta",
-              style: "default",
-              onPress: () => {
-                // Opcional: abrir la carpeta con Linking (requiere URI file://, pero no siempre funciona)
-                // Por ahora solo informamos.
-              },
-            }
-          : null,
-      ].filter(Boolean) as {
-        text: string;
-        style: "default" | "cancel";
-        onPress?: () => void;
-      }[],
-    );
-  };
-
-  // MIME type helper
-  const getMimeType = (fileName: string): string => {
-    const ext = fileName.split(".").pop()?.toLowerCase();
-    const map: Record<string, string> = {
-      pdf: "application/pdf",
-      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    };
-    return map[ext || ""] || "application/octet-stream";
-  };
-
-  // UTI para iOS
-  const getUTI = (mimeType: string): string | undefined => {
-    if (mimeType === "application/pdf") return "com.adobe.pdf";
-    if (mimeType.startsWith("image/")) return "public.image";
-    if (mimeType === "text/csv") return "public.comma-separated-values-text";
-    return undefined;
-  };
-
   const formatDate = (dateString: string) => {
     const [year, month, day] = dateString.split("-");
     return `${day}/${month}/${year.slice(-2)}`;
-  };
-
-  const getLogoUri = async () => {
-    const asset = Asset.fromModule(logo);
-    await asset.downloadAsync();
-    return asset.localUri!;
   };
 
   // Obtener todos los empleados únicos
@@ -292,117 +139,6 @@ export default function ReportesScreen() {
     }));
   }, [confirmedDates, calendarData, selectedEmployee]);
 
-  const handleExport = async (type: "excel" | "pdf") => {
-    if (reportResults.length === 0) {
-      Alert.alert("Nada para exportar", "No hay datos en el reporte.");
-      return;
-    }
-
-    try {
-      const baseDir = getSafeDirectory();
-
-      if (!baseDir) {
-        Alert.alert(
-          "Exportación no disponible",
-          "Esta función requiere un dispositivo físico.",
-        );
-        return;
-      }
-
-      const timestamp = Date.now();
-      const fileName = `reporte_${timestamp}.${
-        type === "excel" ? "xlsx" : "pdf"
-      }`;
-
-      const fileUri = `${baseDir}${fileName}`;
-
-      const exportData = reportResults.map((r, i) => ({
-        ID: i + 1,
-        Número: r.number,
-        Nombre: r.name,
-        Fechas: r.dates.map(formatDate).join(", "),
-        Días: r.dates.length,
-      }));
-
-      /* ================= EXCEL ================= */
-      if (type === "excel") {
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        XLSX.utils.book_append_sheet(wb, ws, "Reporte");
-
-        const wbout = XLSX.write(wb, { type: "base64", bookType: "xlsx" });
-
-        await FileSystem.writeAsStringAsync(fileUri, wbout, {
-          encoding: "base64",
-        });
-
-        await Sharing.shareAsync(fileUri, {
-          mimeType: getMimeType(fileName),
-          dialogTitle: "Guardar reporte Excel",
-        });
-
-        return;
-      }
-
-      /* ================= PDF ================= */
-      const logoUri = await getLogoUri();
-
-      const rows = exportData
-        .map(
-          (r) => `
-        <tr>
-          <td>${r.ID}</td>
-          <td>${r.Número}</td>
-          <td>${r.Nombre}</td>
-          <td>${r.Fechas}</td>
-          <td>${r.Días}</td>
-        </tr>`,
-        )
-        .join("");
-
-      const html = `
-      <html>
-        <head>
-          <meta charset="utf-8" />
-          <style>
-            body { font-family: Arial; padding: 20px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-            th { background: #2563eb; color: white; }
-          </style>
-        </head>
-        <body>
-          <img src="${logoUri}" width="80" />
-          <h2>Reporte de vacaciones</h2>
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th><th>N°</th><th>Nombre</th><th>Fechas</th><th>Días</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </body>
-      </html>
-    `;
-
-      const { uri: pdfUri } = await Print.printToFileAsync({ html });
-
-      const shareUri =
-        Platform.OS === "android"
-          ? await FileSystem.getContentUriAsync(pdfUri)
-          : pdfUri;
-
-      await Sharing.shareAsync(shareUri, {
-        mimeType: "application/pdf",
-        dialogTitle: "Guardar reporte PDF",
-      });
-    } catch (error: any) {
-      console.error(error);
-      Alert.alert("Error", error.message || "Error al exportar");
-    }
-  };
-
   /* ---------------- CARGAR CALENDARIO ---------------- */
 
   useEffect(() => {
@@ -457,23 +193,7 @@ export default function ReportesScreen() {
       <StatusBar barStyle="dark-content" />
       {/* Controles superiores - FIJOS (no hacen scroll) */}
       <View style={styles.controlsContainer}>
-        <View style={styles.headerRowTop}>
-          <Text style={styles.title}>Reportes</Text>
-
-          <TouchableOpacity
-            style={styles.exportBtn}
-            onPress={() =>
-              Alert.alert("Exportar", "Selecciona formato", [
-                { text: "Excel (.xlsx)", onPress: () => handleExport("excel") },
-                { text: "PDF (.pdf)", onPress: () => handleExport("pdf") },
-                { text: "Cancelar", style: "cancel" },
-              ])
-            }
-          >
-            <Ionicons name="download-outline" size={18} color="white" />
-            <Text style={styles.exportText}>Exportar</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.title}>Reportes</Text>
 
         {/* BÚSQUEDA DE EMPLEADO */}
         <View style={styles.searchContainer}>
@@ -514,7 +234,6 @@ export default function ReportesScreen() {
           </View>
         )}
 
-        {/* RADIO BUTTONS */}
         {/* BOTONES DE TIPO DE REPORTE - ESTILO TOGGLE */}
         <View style={styles.reportTypeContainer}>
           {[
@@ -869,15 +588,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#334155",
   },
-  radioButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  radioLabel: {
-    marginLeft: 8,
-    fontSize: 16,
-  },
   calendarContainer: {
     marginBottom: 16,
   },
@@ -966,13 +676,10 @@ const styles = StyleSheet.create({
     marginTop: 6,
     minHeight: 56,
   },
-  datesContainer: {
-    justifyContent: "center",
-  },
   dateItem: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center", // 👈 NUEVO
+    justifyContent: "center",
     marginBottom: 2,
   },
   bullet: {
@@ -985,7 +692,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#334155",
     lineHeight: 20,
-    textAlign: "center", // 👈 opcional
+    textAlign: "center",
   },
   resultCellWrapper: {
     paddingVertical: 8,
@@ -1011,27 +718,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#2563eb",
-  },
-  headerRowTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  exportBtn: {
-    backgroundColor: "#2f855a",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  exportText: {
-    color: "white",
-    marginLeft: 6,
-    fontWeight: "600",
   },
   reportTypeContainer: {
     flexDirection: "row",
