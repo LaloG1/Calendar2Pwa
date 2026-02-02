@@ -45,7 +45,9 @@ export default function ReportesScreen() {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-
+  const [filterType, setFilterType] = useState<
+    "all" | "vacaciones" | "permiso" | "falta"
+  >("all");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [rangeDates, setRangeDates] = useState<string[]>([]);
   const [confirmedDates, setConfirmedDates] = useState<string[]>([]);
@@ -186,6 +188,26 @@ export default function ReportesScreen() {
     setSearchQuery("");
   };
 
+  /* ---------------- ACCIONES DE LOS BOTONES ---------------- */
+
+  const handleApprove = () => {
+    // Lógica para aprobar
+    console.log("Aprobar seleccionado");
+    // Aquí puedes agregar tu lógica de aprobación
+  };
+
+  const handleWarning = () => {
+    // Lógica para advertencia/revisar
+    console.log("Advertencia seleccionado");
+    // Aquí puedes agregar tu lógica de advertencia
+  };
+
+  const handleReject = () => {
+    // Lógica para rechazar
+    console.log("Rechazar seleccionado");
+    // Aquí puedes agregar tu lógica de rechazo
+  };
+
   /* ---------------- UI PRINCIPAL ---------------- */
 
   return (
@@ -193,7 +215,80 @@ export default function ReportesScreen() {
       <StatusBar barStyle="dark-content" />
       {/* Controles superiores - FIJOS (no hacen scroll) */}
       <View style={styles.controlsContainer}>
-        <Text style={styles.title}>Reportes</Text>
+        <View style={styles.headerRowTop}>
+          <Text style={styles.title}>Reportes</Text>
+
+          {/* FILTROS DE TIPO */}
+          <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterType === "all" && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterType("all")}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filterType === "all" && styles.filterButtonTextActive,
+                ]}
+              >
+                Todos
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterType === "vacaciones" && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterType("vacaciones")}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filterType === "vacaciones" && styles.filterButtonTextActive,
+                ]}
+              >
+                Vacaciones
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterType === "permiso" && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterType("permiso")}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filterType === "permiso" && styles.filterButtonTextActive,
+                ]}
+              >
+                Permiso
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                filterType === "falta" && styles.filterButtonActive,
+              ]}
+              onPress={() => setFilterType("falta")}
+            >
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  filterType === "falta" && styles.filterButtonTextActive,
+                ]}
+              >
+                Falta
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* BÚSQUEDA DE EMPLEADO */}
         <View style={styles.searchContainer}>
@@ -554,6 +649,12 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginBottom: 20,
   },
+  headerRowTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -756,6 +857,32 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   reportTypeButtonTextActive: {
+    color: "white",
+  },
+  filterContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+  },
+  filterButtonActive: {
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
+  },
+  filterButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#334155",
+  },
+  filterButtonTextActive: {
     color: "white",
   },
 });
