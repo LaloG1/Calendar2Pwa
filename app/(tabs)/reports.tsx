@@ -52,7 +52,7 @@ export default function ReportesScreen() {
   const [calendarData, setCalendarData] = useState<CalendarData>({});
   const [reportType, setReportType] = useState<ReportType>("day");
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
-    null
+    null,
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -104,7 +104,7 @@ export default function ReportesScreen() {
               });
             },
           },
-        ]
+        ],
       );
 
       if (Platform.OS === "android") {
@@ -127,7 +127,7 @@ export default function ReportesScreen() {
                 }
               },
             },
-          ]
+          ],
         );
       } else if (Platform.OS === "ios") {
         await Sharing.shareAsync(shareableUri, {
@@ -150,7 +150,7 @@ export default function ReportesScreen() {
     const destPath = `${FileSystem.cacheDirectory}Download/${fileName}`;
     await FileSystem.makeDirectoryAsync(
       `${FileSystem.cacheDirectory}Download/`,
-      { intermediates: true }
+      { intermediates: true },
     );
     await FileSystem.copyAsync({ from: fileUri, to: destPath });
 
@@ -179,7 +179,7 @@ export default function ReportesScreen() {
         text: string;
         style: "default" | "cancel";
         onPress?: () => void;
-      }[]
+      }[],
     );
   };
 
@@ -235,7 +235,7 @@ export default function ReportesScreen() {
       .filter(
         (emp) =>
           emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          emp.number.toString().includes(searchQuery)
+          emp.number.toString().includes(searchQuery),
       )
       .slice(0, 5);
   }, [searchQuery, allEmployees]);
@@ -304,7 +304,7 @@ export default function ReportesScreen() {
       if (!baseDir) {
         Alert.alert(
           "Exportación no disponible",
-          "Esta función requiere un dispositivo físico."
+          "Esta función requiere un dispositivo físico.",
         );
         return;
       }
@@ -356,7 +356,7 @@ export default function ReportesScreen() {
           <td>${r.Nombre}</td>
           <td>${r.Fechas}</td>
           <td>${r.Días}</td>
-        </tr>`
+        </tr>`,
         )
         .join("");
 
@@ -515,36 +515,40 @@ export default function ReportesScreen() {
         )}
 
         {/* RADIO BUTTONS */}
-        {[
-          { label: "Un día", value: "day" },
-          { label: "Rango de fechas", value: "range" },
-          { label: "Esta semana", value: "week" },
-        ].map((opt) => (
-          <TouchableOpacity
-            key={opt.value}
-            onPress={() => {
-              setReportType(opt.value as ReportType);
-              setRangeStart(null);
-              setRangeEnd(null);
-              setSelectedDate(null);
-              setConfirmedDates([]);
-              setShowCalendar(true);
-            }}
-            style={styles.radioButton}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={
-                reportType === opt.value
-                  ? "radio-button-on"
-                  : "radio-button-off"
-              }
-              size={22}
-              color="#2563eb"
-            />
-            <Text style={styles.radioLabel}>{opt.label}</Text>
-          </TouchableOpacity>
-        ))}
+        {/* BOTONES DE TIPO DE REPORTE - ESTILO TOGGLE */}
+        <View style={styles.reportTypeContainer}>
+          {[
+            { label: "Un día", value: "day" },
+            { label: "Rango de fechas", value: "range" },
+            { label: "Esta semana", value: "week" },
+          ].map((opt) => (
+            <TouchableOpacity
+              key={opt.value}
+              onPress={() => {
+                setReportType(opt.value as ReportType);
+                setRangeStart(null);
+                setRangeEnd(null);
+                setSelectedDate(null);
+                setConfirmedDates([]);
+                setShowCalendar(true);
+              }}
+              style={[
+                styles.reportTypeButton,
+                reportType === opt.value && styles.reportTypeButtonActive,
+              ]}
+              activeOpacity={0.7}
+            >
+              <Text
+                style={[
+                  styles.reportTypeButtonText,
+                  reportType === opt.value && styles.reportTypeButtonTextActive,
+                ]}
+              >
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
         {/* CALENDARIOS */}
         {showCalendar && reportType === "day" && (
@@ -635,7 +639,7 @@ export default function ReportesScreen() {
                         color: "#93c5fd",
                         textColor: "white",
                       },
-                    ])
+                    ]),
                   )),
               }}
               markingType="period"
@@ -1028,5 +1032,44 @@ const styles = StyleSheet.create({
     color: "white",
     marginLeft: 6,
     fontWeight: "600",
+  },
+  reportTypeContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+    gap: 8,
+  },
+  reportTypeButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: "#f8fafc",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#cbd5e1",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  reportTypeButtonActive: {
+    backgroundColor: "#2563eb",
+    borderColor: "#2563eb",
+    shadowColor: "#2563eb",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  reportTypeButtonText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#334155",
+    textAlign: "center",
+  },
+  reportTypeButtonTextActive: {
+    color: "white",
   },
 });
